@@ -19,7 +19,7 @@ decay = 1 / episodes
 def Q(st, ac=None):
    if ac is None:
       return np.dot(w, st).ravel()
-   return np.dot(w[ac], st)
+   return np.dot(w[ac], st)[0]
 
 def policy(st):
    if np.random.rand() > epsilon:
