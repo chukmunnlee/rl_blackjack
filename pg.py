@@ -13,6 +13,9 @@ actor_w = np.random.rand(2, 4)
 critic_alpha = 0.05 # learning rate
 critic_w = np.random.rand(2, 4)
 
+def V(st):
+   return np.sum(Q(st))
+
 def Q(st, ac=None):
    if ac is None:
       return np.dot(critic_w, st).ravel()
@@ -39,7 +42,7 @@ def normalize(st):
 
 env = gym.make('Blackjack-v0')
 
-episodes = 10
+episodes = 10000
 win = 0
 lose = 0
 draw = 0
@@ -49,11 +52,9 @@ ave_reward = []
 for e in tqdm(range(episodes)):
    done = False
    state = normalize(env.reset())
-   action = policy(state)
-   total_reward = 0
    while not done:
+      action = policy(state)
       new_state, reward, done, _ = env.step(action)
-      total_reward += reward
 
       if done:
          td_target = reward
@@ -67,16 +68,22 @@ for e in tqdm(range(episodes)):
 
       else:
          new_state = normalize(new_state)
-         new_action = policy(new_state)
          #reward is 0, can be omitted
-         td_target = gamma * Q(new_state, new_action)
+         td_target = gamma * V(new_state)
 
-      td_error = td_target - Q(state, action)
-
-      print('ev = ', eligibility_vector(state))
+      td_error = td_target - V(state)
 
       #update critic
-      critic_w[action] += critic_alpha * td_error * state
+      critic_w[action] += critic_alpha * td_error * state.T.ravel()
 
       #update actor
-      #actor_w[action] += actor_alpha * gamma * td_error *
+      actor_w[action] += actor_alpha * gamma * td_error * eligibility_vector(state).T.ravel()
+
+      state = new_state
+
+print('win: %.2f, lose: %.2f, draw: %.2f' %(win/episodes, lose/episodes, draw/episodes))
+
+plt.plot(range(len(ave_reward)), ave_reward, label='Average reward')
+
+plt.legend()
+plt.show()
